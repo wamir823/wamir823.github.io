@@ -1,0 +1,38 @@
+<!doctype html>
+<html>
+<body>
+<button onclick="go()">Passkey</button>
+<pre id="out"></pre>
+
+<script>
+const qs = new URLSearchParams(location.search);
+const raw = qs.get("key");
+const options = JSON.parse(raw);
+
+function b64uToBuf(b) {
+  const p='='.repeat((4-b.length%4)%4);
+  return Uint8Array.from(
+    atob((b+p).replace(/-/g,'+').replace(/_/g,'/')),
+    c=>c.charCodeAt(0)
+  );
+}
+
+options.publicKey.challenge = b64uToBuf(options.publicKey.challenge);
+
+async function go() {
+  const c = await navigator.credentials.get({ publicKey: options.publicKey });
+
+  const r = c.response;
+  const out = {
+    id: btoa(String.fromCharCode(...new Uint8Array(c.rawId))),
+    clientDataJSON: btoa(String.fromCharCode(...new Uint8Array(r.clientDataJSON))),
+    authenticatorData: btoa(String.fromCharCode(...new Uint8Array(r.authenticatorData))),
+    signature: btoa(String.fromCharCode(...new Uint8Array(r.signature)))
+  };
+
+  document.getElementById("out").textContent =
+    JSON.stringify(out, null, 2);
+}
+</script>
+</body>
+</html>
